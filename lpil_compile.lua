@@ -40,7 +40,8 @@ local keymap = require "core.keymap"
 if not config.lpilcompile then
   config.lpilcompile = {
   	latex_command = "lpilMagicRunner",
-  	view_command  = "okular"
+  	view_command  = "okular",
+  	build_dir     = "build/latex"
   }
 end
 
@@ -52,27 +53,36 @@ if not config.lpilcompile.view_command then
   config.lpilcompile.view_command = "okular"
 end
 
+if not config.lpilcompile.build_dir then
+  config.lpilcompile.build_dir = "build/latex"
+end
+
 -------------------------------------------------------------------------
 
 command.add("core.docview!", {
   ["lpilcompile:lpil-compile"] = function(dv)
     -- The current (La)TeX file and path
     local lpilname = dv:get_name()
-    local lpilpath = common.dirname(dv:get_filename())
+    local lpilpath = common.home_expand(common.dirname(dv:get_filename()))
     local pdfname = lpilname:gsub("%.tex$", ".pdf")
 
     -- LaTeX compiler as configured in config.lpilcompile
-    local lpilcmd = config.lpilcompile and config.lpilcompile.latex_command
-    local viewcmd = config.lpilcompile and config.lpilcompile.view_command
+    local lpilcmd  = config.lpilcompile and config.lpilcompile.latex_command
+    local viewcmd  = config.lpilcompile and config.lpilcompile.view_command
+    local builddir = config.lpilcompile and config.lpilcompile.build_dir
 
     if not lpilcmd then
       core.log("No LaTeX compiler provided in config.")
     else
-      core.log("LaTeX compiler is %s, compiling %s", lpilcmd, lpilname)
+      core.log(
+        "LaTeX compiler is %s, compiling %s in %s to %s",
+        lpilcmd, lpilname, lpilpath, builddir
+      )
 
       console.run {
         command = string.format(
-          "%s %s && %s %s", lpilcmd, lpilname, viewcmd, pdfname
+          "%s %s %s",
+          lpilcmd, lpilname, builddir
         ),
         cwd = lpilpath,
         on_complete = function() core.log("Tex compiling command terminated.") end
@@ -82,5 +92,37 @@ command.add("core.docview!", {
 })
 
 keymap.add { ["ctrl+shift+t"] = "lpilcompile:lpil-compile" }
+
+command.add("core.docview!", {
+  ["lpilcompile:lpil-view"] = function(dv)
+    -- The current (La)TeX file and path
+    local lpilname = dv:get_name()
+    local lpilpath = common.home_expand(common.dirname(dv:get_filename()))
+    local pdfname = lpilname:gsub("%.tex$", ".pdf")
+
+    -- LaTeX compiler as configured in config.lpilcompile
+    local viewcmd  = config.lpilcompile and config.lpilcompile.view_command
+    local builddir = config.lpilcompile and config.lpilcompile.build_dir
+
+    if not viewcmd then
+      core.log("No LaTeX viewer provided in config.")
+    else
+      core.log(
+        "LaTeX viewer is %s, viewing %s in %s from %s",
+        viewcmd, lpilname, lpilpath, builddir
+      )
+
+      os.execute(
+        string.format(
+          "%s %s &",
+          viewcmd, lpilpath .. '/' .. builddir .. '/' .. pdfname
+        )
+      )
+    end
+  end,
+})
+
+keymap.add { ["ctrl+shift+v"] = "lpilcompile:lpil-view" }
+
 
 core.log_quiet("Loaded lpil-compile")
