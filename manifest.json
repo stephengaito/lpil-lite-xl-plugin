@@ -1,0 +1,16 @@
+{
+  "addons": [
+    {
+      "description": "A set of tools for using LPiL projects in Lite-XL",
+      "id": "lpil_tools",
+      "mod_version": "3",
+      "name": "lpil-tools",
+      "path": ".",
+      "type": "plugin",
+      "version": "0.1",
+      "dependencies": {
+      	"console": {}
+      }
+    }
+  ]
+}
